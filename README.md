@@ -1,69 +1,72 @@
-# AI Financial Risk & Compliance Management System
+# Financial Risk and Compliance Backend (Spring Boot)
 
-An enterprise-style backend system built with **Spring Boot** that monitors financial transactions, detects potential fraud, performs risk analysis, and supports compliance reporting.
+A Spring Boot REST API that stores customers and transactions in MySQL, raises a fraud alert for high-value transactions, and records AML compliance reports. Built as a university backend project to practise a layered Spring architecture.
 
 ## Tech Stack
 
 * Java 17
-* Spring Boot
+* Spring Boot 4.0
 * Spring Data JPA / Hibernate
 * MySQL
-* REST APIs
-* Python (AI Risk Analysis Module)
-* Postman (API Testing)
+* Lombok
+* Maven
+* Postman (API testing)
 
-## Core Features
+## What the API Does
 
-* Customer Risk Profile Management
-* Transaction Monitoring
-* Fraud Detection Engine
-* AI-Based Risk Analysis
-* Suspicious Activity Alerts
-* Compliance Reporting
-* Financial Audit Logging
+| Endpoint | Behaviour |
+|----------|-----------|
+| `POST /customers`, `GET /customers` | Create and list customers |
+| `POST /transactions`, `GET /transactions` | Save a transaction with a timestamp and list transactions. Any transaction above 10,000 creates a HIGH-severity "High Value Transaction" fraud alert |
+| `GET /fraud/alerts` | List fraud alerts |
+| `POST /compliance/report` | Save an AML report; the request body becomes the report details |
+| `GET /risk/analyze/{amount}` | Runs `python3 ai/predict.py <amount>` and returns the script's first line of output |
 
-## System Architecture
+**Current limits**
 
-Controller → Service → Repository → Database
-AI Module → Risk Analysis → Fraud Detection → Compliance Reporting
+* Fraud detection is one rule (an amount threshold), not a trained model.
+* The Python scoring script `ai/predict.py` is not included in this repository, so `/risk/analyze` returns `AI_ANALYSIS_ERROR` until you add a script at that path.
+* `RiskProfile` and `AuditLog` entities and repositories exist, but no endpoint writes to them yet.
 
-## API Examples
+## Run It
 
-Create Customer
+1. Create the database:
+
+   ```sql
+   CREATE DATABASE financial_risk_system;
+   ```
+
+2. Set your MySQL credentials as environment variables (the app reads them in `application.properties`):
+
+   ```bash
+   export DB_USERNAME=root
+   export DB_PASSWORD=your_mysql_password
+   ```
+
+3. Start the app (needs Maven installed):
+
+   ```bash
+   mvn spring-boot:run
+   ```
+
+The API runs at `http://localhost:8080`.
+
+## Architecture
 
 ```
-POST /customers
-```
-
-Create Transaction
-
-```
-POST /transactions
-```
-
-Get Fraud Alerts
-
-```
-GET /fraud/alerts
-```
-
-Run Risk Analysis
-
-```
-GET /risk/analyze/{amount}
+Controller → Service → Repository → MySQL
+                ↓
+     PythonRiskAnalyzer (external script hook)
 ```
 
 ## Project Structure
 
 ```
-controller/
-service/
-repository/
-entity/
-ai/
-config/
+src/main/java/com/enterprise/risk/
+├── ai/           # PythonRiskAnalyzer: calls the external Python script
+├── config/
+├── controller/   # REST endpoints
+├── entity/       # JPA entities
+├── repository/   # Spring Data repositories
+└── service/      # Business logic, fraud rule, compliance reports
 ```
-
-## Purpose
-
-This project demonstrates **enterprise backend architecture for financial monitoring systems**, including transaction analysis, fraud detection logic, and compliance reporting workflows.
